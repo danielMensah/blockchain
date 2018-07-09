@@ -1,0 +1,22 @@
+{
+  "chain": [
+    {
+      "index": 0,
+      "timestamp": 1531142708446,
+      "data": "Genesis block",
+      "previousHash": "0",
+      "hash": "9baeafdb1b58bf8df67c2d555725031754b05a24dff5de4f3155d984b5b7ed0a",
+      "nonce": 0
+    },
+    {
+      "index": 1,
+      "timestamp": 1531142708446,
+      "data": {
+        "amount": 5
+      },
+      "previousHash": "9baeafdb1b58bf8df67c2d555725031754b05a24dff5de4f3155d984b5b7ed0a",
+      "hash": "3f97284e117a7bee57244f18eebf8a4b451cc97506e8eb16201a8c25936b5f14",
+      "nonce": 0
+    }
+  ]
+}
