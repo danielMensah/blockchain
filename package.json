@@ -1,8 +1,15 @@
 {
   "name": "blockchain",
   "version": "0.0.1",
+  "scripts": {
+    "go": "nodemon --watch dev -e js dev/api.js"
+  },
   "dependencies": {
-    "crypto-js": "^3.1.9-1"
+    "body-parser": "^1.18.3",
+    "crypto-js": "^3.1.9-1",
+    "express": "^4.16.3",
+    "nodemon": "^1.17.5",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0"
