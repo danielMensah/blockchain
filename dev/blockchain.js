@@ -1,5 +1,4 @@
 const currentNodeUrl = process.argv[3];
-const uuid = require('uuid/v1');
 const Block = require('./block');
 const Transaction = require('./transaction');
 
@@ -8,8 +7,10 @@ class Blockchain {
   constructor() {
     this.chain = [this.createGenesis()];
     this.pendingTransactions = []; // pending transactions. They get validated when a new block is created.
-    this.setDifficulty = 4;
-    // this.getDifficulty = retur
+
+    this.currentNodeUrl = currentNodeUrl;
+    this.networkNodes = [];
+    this.getDifficulty = () => 4;
   }
 
   createGenesis() {
@@ -22,7 +23,7 @@ class Blockchain {
 
   createNewBlock(nonce) {
     const newBlock = new Block(this.chain.length, this.pendingTransactions, nonce, this.latestBlock().hash);
-    newBlock.mineBlock(this.getDifficulty);
+    newBlock.mineBlock(this.getDifficulty());
     this.emptyTransactions();
     this.chain.push(newBlock);
 
@@ -33,7 +34,7 @@ class Blockchain {
     const newTransaction = new Transaction(amount, sender, recipient);
     this.pendingTransactions.push(newTransaction);
 
-    return this.latestBlock()['index'];
+    return this.latestBlock()['index'] + 1;
   }
 
   emptyTransactions() {
