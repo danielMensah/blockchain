@@ -5,16 +5,18 @@ const Transaction = require('./transaction');
 class Blockchain {
 
   constructor() {
-    this.chain = [this.createGenesis()];
+    this.chain = [];
     this.pendingTransactions = []; // pending transactions. They get validated when a new block is created.
 
     this.currentNodeUrl = currentNodeUrl;
     this.networkNodes = [];
     this.getDifficulty = () => 4;
+
+    this.createGenesis();
   }
 
   createGenesis() {
-    return new Block(0, "Genesis block", "0");
+    this.chain.push(new Block(this.chain.length + 1, "Genesis block", "0", "0", 18));
   }
 
   latestBlock() {
@@ -22,7 +24,7 @@ class Blockchain {
   }
 
   createNewBlock(nonce) {
-    const newBlock = new Block(this.chain.length, this.pendingTransactions, nonce, this.latestBlock().hash);
+    const newBlock = new Block(this.chain.length + 1, this.pendingTransactions, nonce, this.latestBlock().hash);
     newBlock.mineBlock(this.getDifficulty());
     this.emptyTransactions();
     this.chain.push(newBlock);
@@ -31,9 +33,11 @@ class Blockchain {
   }
 
   createNewTransaction(amount, sender, recipient) {
-    const newTransaction = new Transaction(amount, sender, recipient);
-    this.pendingTransactions.push(newTransaction);
+    return new Transaction(amount, sender, recipient);
+  }
 
+  addTransactionToPendingTransactions(transaction) {
+    this.pendingTransactions.push(transaction);
     return this.latestBlock()['index'] + 1;
   }
 

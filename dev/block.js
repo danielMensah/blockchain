@@ -2,12 +2,12 @@ const SHA256 = require('crypto-js/sha256');
 
 class Block {
 
-  constructor(index, transaction, nonce, previousBlockHash = '') {
+  constructor(index, transaction, nonce, previousBlockHash = '', hash = 0) {
     this.index = index;
     this.timestamp = Date.now();
     this.transaction = transaction;
     this.previousBlockHash = previousBlockHash;
-    this.hash = this.calculateHash();
+    this.hash = hash || this.calculateHash();
     this.nonce = nonce; // comes from a proof of work and can be any number. It's a proof that we created this new block in a good way.
   }
 

@@ -17,22 +17,81 @@ app.get('/blockchain', function (req, res) {
 });
 
 app.post('/transaction', function (req, res) {
-  console.log('Making a transaction....');
-  const blockIndex = domcoin.createNewTransaction(req.body.amount, req.body.sender, req.body.recipient);
-  console.log('Transaction created successfully!');
-  res.json({ note: `Transaction will be added in block ${blockIndex}.`})
+  const newTransaction = req.body;
+  const blockIndex = domcoin.addTransactionToPendingTransactions(newTransaction);
+
+  res.json({note: `Transaction will be added in block ${blockIndex}.`})
+});
+
+app.post('/transaction/broadcast', function (req, res) {
+  const newTransaction = domcoin.createNewTransaction(req.body.amount, req.body.sender, req.body.recipient);
+  domcoin.addTransactionToPendingTransactions(newTransaction);
+
+  // broadcasting the new transaction to all the nodes
+  const requestPromises = [];
+  domcoin.networkNodes.forEach(networkNodeUrl => {
+    const requestOptions = {
+      uri: networkNodeUrl + '/transaction',
+      method: 'POST',
+      body: newTransaction,
+      json: true
+    };
+
+    requestPromises.push(rp(requestOptions));
+  });
+
+  Promise.all(requestPromises)
+    .then(() => {
+      res.json({ note: 'Transaction created and broadcast successfully.'})
+    })
 });
 
 app.get('/mine', function (req, res) {
-  domcoin.createNewTransaction(12.5, "00", nodeAddress);
-
   console.log('Mining block...');
-  const block = domcoin.createNewBlock(0);
+  const newBlock = domcoin.createNewBlock(0);
 
-  console.log('Done!');
-  res.write(JSON.stringify({note: "New block mined successfully", block}));
+  const requestPromises = [];
+  domcoin.networkNodes.forEach(networkNodeUrl => {
+    const requestOptions = {
+      uri: networkNodeUrl + '/receive-new-block',
+      method: 'POST',
+      body: { newBlock },
+      json: true
+    };
 
-  res.end();
+    requestPromises.push(rp(requestOptions));
+  });
+
+  Promise.all(requestPromises)
+    .then(() => {
+      // broadcasting mining reward
+      const requestOptions = {
+        uri: domcoin.currentNodeUrl + '/transaction/broadcast',
+        method: 'POST',
+        body: { amount: 12.5, sender: '00', recipient: nodeAddress },
+        json: true
+      };
+
+      return rp(requestOptions);
+    }).then(() => {
+    console.log('Done!');
+    res.write(JSON.stringify({ note: "New block mined & broadcast successfully", newBlock}), () => res.end());
+  });
+});
+
+app.post('/receive-new-block', function (req, res) {
+  const newBlock = req.body.newBlock;
+  const lastBlock = domcoin.latestBlock();
+  const correctHash = lastBlock.hash === newBlock.previousBlockHash;
+  const correctIndex = lastBlock['index'] + 1 === newBlock['index'];
+
+  if (correctHash && correctIndex) {
+    domcoin.chain.push(newBlock);
+    domcoin.pendingTransactions = [];
+    res.json({note: 'New block received and accepted.', newBlock});
+  } else {
+    res.json({note: 'New block rejected.', newBlock})
+  }
 });
 
 // register and broadcast new node
@@ -64,9 +123,8 @@ app.post('/register-broadcast-node', function (req, res) {
 
       return rp(bulkRegisterOptions);
     }).then(() => {
-      res.json({note: 'New node registered successfully!'})
+      res.json({ note: 'New node registered with network successfully.' });
   })
-
 });
 
 // register new node
@@ -77,10 +135,9 @@ app.post('/register-node', function (req, res) {
 
   if (nodeNotAlreadyPresent && notCurrentNode) {
     domcoin.networkNodes.push(newNodeUrl);
-    res.json({ note: 'New node registered successfully.'});
-  } else {
-    res.json({ note: 'Error while adding new node.'});
   }
+
+  res.json({ note: 'New node registered successfully.' });
 });
 
 // register multiple nodes at once
@@ -92,13 +149,10 @@ app.post('/register-nodes-bulk', function (req, res) {
     const notCurrentNode = domcoin.currentNodeUrl !== networkNodeUrl;
     if (nodeNotAlreadyPresent && notCurrentNode) {
       domcoin.networkNodes.push(networkNodeUrl);
-      res.json({ note: 'Bulk registered successfully.'});
-    } else {
-      res.json({ note: 'Error while adding bulk node.'});
     }
+
+    res.write(JSON.stringify({ note: 'Bulk registration successful.' }), () => res.end());
   });
-
-
 });
 
 app.listen(port, () => {
